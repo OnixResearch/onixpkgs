@@ -81,6 +81,7 @@
         llamacpp-rocm-qwen4exp = x86_64Linux;
         llamacpp-rocm-rpc = x86_64Linux;
         mesh-llm = linux;
+        mesh-llm-headless = linux;
         mesh-research = linux;
         open-notebook = x86_64Linux;
         openbubbles = x86_64Linux;
@@ -117,6 +118,9 @@
     {
       overlays.default = import ./overlay.nix { inherit inputs; };
 
+      # Library functions shared by consumers; call with { lib, pkgs, kachePackage }.
+      lib.kacheNixRust = import ./lib/kache-nix-rust.nix;
+
       packages = forAllSystems (
         system:
         let
@@ -133,6 +137,23 @@
         in
         lib.mapAttrs' (name: lib.nameValuePair "package-${name}") packages
         // lib.optionalAttrs (packages ? collie-herdr) (collieChecks pkgs)
+        // lib.optionalAttrs (packages ? iroh-ssh) {
+          # `iroh-ssh connect` must exit with the child ssh's exact status.
+          iroh-ssh-child-status = import ./pkgs/iroh-ssh/child-status-check.nix {
+            inherit pkgs;
+            irohSsh = pkgs.iroh-ssh;
+          };
+        }
+        // lib.optionalAttrs (packages ? mesh-llm-headless) {
+          # The vulkan backend is an override of the exported cpu build.
+          package-mesh-llm-headless-vulkan = pkgs.mesh-llm-headless.override { backend = "vulkan"; };
+        }
+        // lib.optionalAttrs (system == "x86_64-linux") {
+          kache-nix-rust-wrapper-contract = import ./lib/kache-nix-rust-contract.nix {
+            inherit pkgs lib;
+            kacheNixRust = self.lib.kacheNixRust;
+          };
+        }
         // {
           formatting = (treefmtFor system).config.build.check self;
         }

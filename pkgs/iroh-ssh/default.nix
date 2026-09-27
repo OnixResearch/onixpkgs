@@ -2,34 +2,32 @@
   lib,
   rustPlatform,
   fetchFromGitHub,
-  pkg-config,
-  openssl,
 }:
 
 rustPlatform.buildRustPackage rec {
   pname = "iroh-ssh";
-  version = "0.2.9";
+  version = "0.2.12";
 
   src = fetchFromGitHub {
     owner = "rustonbsd";
     repo = "iroh-ssh";
     rev = version;
-    hash = "sha256-0G2RZbxyxi96FpVPEamfcTrOgPxpFYHmyYg1kQfo7TQ=";
+    hash = "sha256-zt5Adq3U+sp0w5+X1xf/vEgQsxQ9G5tZL4+SOCHo5ws=";
   };
 
-  cargoHash = "sha256-2/hc1K6zUyQlWorZh34HP9PCdV4YD1ob9l1DFiW7c1Y=";
+  cargoHash = "sha256-NFiOsBYJ1nJCH8E7F7WuL2Xj0/djdnvrJ/0S+9SItpo=";
 
-  nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ openssl ];
+  # `iroh-ssh connect` prints IROH_SSH_CONNECTION_TYPE=direct|relay|mixed|none
+  # to stderr, so a session records how the peer was reached.
+  patches = [ ./iroh-ssh-connection-type-evidence.patch ];
+
+  cargoTestFlags = [ "--all-targets" ];
 
   meta = {
-    description = "SSH server and client built on Iroh networking";
+    description = "SSH to any machine without an IP address";
     homepage = "https://github.com/rustonbsd/iroh-ssh";
-    license = with lib.licenses; [
-      mit
-      asl20
-    ];
-    platforms = lib.platforms.linux;
+    license = lib.licenses.mit;
+    platforms = lib.platforms.unix;
     mainProgram = "iroh-ssh";
   };
 }

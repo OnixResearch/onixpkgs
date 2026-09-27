@@ -29,12 +29,28 @@ pkgs = import nixpkgs {
 
 Flake code that does not instantiate nixpkgs can use `inputs.onixpkgs.packages.${system}.<name>`. These packages are built from the overlay over plain nixpkgs. They do not see the consumer's nixpkgs config or other overlays.
 
+`lib.kacheNixRust` builds rustc wrappers that route compilation through kache. Call it with the package set and kache package to use:
+
+```nix
+kacheLib = inputs.onixpkgs.lib.kacheNixRust {
+  inherit (pkgs) lib;
+  inherit pkgs;
+  kachePackage = pkgs.kache;
+};
+wrappedRust = kacheLib.mkWrappedRustPackage {
+  rust = pkgs.rustc;
+  cacheDir = "/var/cache/kache-nix";
+};
+```
+
 ## Layout
 
 - `overlay.nix` is `overlays.default`. Each directory `pkgs/<name>/` becomes `pkgs.<name>`, built with `final.callPackage`. `callArgs` holds arguments that do not come from the package set, such as flake inputs. `callers` holds packages built by a scoped callPackage.
 - `pkgs/<name>/default.nix` is a callPackage function. Patches, local sources, and package tests live beside it.
 - `herdr-unwrapped` is the upstream Herdr from `llm-agents.nix`. `pkgs.herdr` wraps it. A later overlay can replace the base.
-- `flake.nix` exports `overlays.default`, `packages`, `checks`, and `formatter`. `exportSystems` limits where a package is exported. An unlisted package is exported on every system its `meta.platforms` allows.
+- `flake.nix` exports `overlays.default`, `lib`, `packages`, `checks`, and `formatter`. `exportSystems` limits where a package is exported. An unlisted package is exported on every system its `meta.platforms` allows.
+- `lib/kache-nix-rust.nix` is `lib.kacheNixRust`. `lib/kache-nix-rust-contract.nix` tests it with a fake kache.
+- `mesh-llm-headless` is the headless Mesh LLM 0.72.1 build that onixos runs. Its `backend` argument selects `cpu`, the default, or `vulkan`: `pkgs.mesh-llm-headless.override { backend = "vulkan"; }`. It writes provenance and license-inventory JSON under `share/mesh-llm`. `mesh-llm` is a separate 0.72.2 build with plugins, which onix-core's services run.
 
 ## Add a package
 
@@ -48,18 +64,14 @@ Flake code that does not instantiate nixpkgs can use `inputs.onixpkgs.packages.$
 
 ## Checks
 
-`nix flake check -L` builds every exported package, runs the Collie controller and remote-session tests, and runs the treefmt check (nixfmt, deadnix, statix, ruff, shellcheck, shfmt, rustfmt, prettier). The ROCm llama.cpp builds and the DeepSeek draft conversion are large; the conversion downloads three checkpoint shards. `nix fmt` applies the same formatters. `ruff.toml` carries onix-core's Python lint settings.
+`nix flake check -L` builds every exported package and the vulkan variant of `mesh-llm-headless`. It runs the Collie controller and remote-session tests, the iroh-ssh child-status test, the kache wrapper contract on x86_64-linux, and the treefmt check (nixfmt, deadnix, statix, ruff, shellcheck, shfmt, rustfmt, prettier). The ROCm llama.cpp builds and the DeepSeek draft conversion are large; the conversion downloads three checkpoint shards. `nix fmt` applies the same formatters. `ruff.toml` carries onix-core's Python lint settings.
 
 ## Consumers
 
 - onix-core applies the overlay to its NixOS and nix-darwin machines, whose Home Manager profiles share that package set. It also applies the overlay to its DGX machines through `modules/dgx-machine` and to its check harnesses. Its dev shell uses `packages`. dgx-machine, tenstorrent-compat, nix-grpc-store, and aspen-uma-helper stay in onix-core, because they depend on onix-core's machine inventory, the private tenstorrent.nix flake, or its Nix fork.
-- Other stack repositories still define copies of these packages:
-  - site: `site/nix/celld.nix` has the same content as `pkgs/celld`.
-  - trellis: builds tracey 1.3.0 from a `releases/latest` URL.
-  - aspen: imports `pkgs/kache` from a pinned onix-core source input.
-  - onixos: its own overlay pins iroh-ssh 0.2.12 and mesh-llm 0.72.1, while onixpkgs has 0.2.9 and 0.72.2.
-
-  Each repository can switch to the published overlay and delete its copy.
+- site takes `celld` from the overlay and trellis takes `tracey`.
+- aspen still imports `pkgs/kache` and `lib/kache-nix-rust.nix` from a pinned onix-core source. It can switch to `pkgs.kache` and `lib.kacheNixRust`.
+- onixos still builds its own iroh-ssh and headless Mesh LLM. `pkgs/iroh-ssh` and `pkgs/mesh-llm-headless` carry the same definitions, so it can switch to the overlay and keep its own guard and bundle around Mesh LLM.
 
 Maintainer: brittonr.
 
@@ -72,7 +84,8 @@ onixpkgs owns package definitions, their source pins, and package-local patches 
 - [Mastering Nixpkgs Overlays](https://nixcademy.com/posts/mastering-nixpkgs-overlays-techniques-and-best-practice/), the [NixOS wiki overlay page](https://wiki.nixos.org/wiki/Overlays), and [NixOS & Flakes: Overlays](https://nixos-and-flakes.thiscute.world/nixpkgs/overlays) — overlay conventions followed by `overlay.nix`: `final`/`prev` roles, no `rec`, dependencies through `final`, and shared choices exposed as attributes rather than overlay parameters.
 - [numtide/llm-agents.nix](https://github.com/numtide/llm-agents.nix) — upstream Herdr binary (`herdr-unwrapped`) wrapped by `pkgs/herdr`.
 - [brittonr/wrappers](https://github.com/brittonr/wrappers) — wrapper library used by `pkgs/herdr`.
-- [peters/horizon](https://github.com/peters/horizon) — source input of `pkgs/horizon`.
+- [peters/horizon](https://github.com/peters/horizon) — source input of `pkgs/horizon`. It is fetched through git with LFS, because its bundled fonts are LFS objects.
+- [rustonbsd/iroh-ssh](https://github.com/rustonbsd/iroh-ssh) — upstream of `pkgs/iroh-ssh`. `iroh-ssh-connection-type-evidence.patch` makes `iroh-ssh connect` print the connection type.
 - [smarzban/herdr-file-viewer](https://github.com/smarzban/herdr-file-viewer), [persiyanov/herdr-reviewr](https://github.com/persiyanov/herdr-reviewr), [paulbkim-dev/vim-herdr-navigation](https://github.com/paulbkim-dev/vim-herdr-navigation), [nikok6/herdr-mirror](https://github.com/nikok6/herdr-mirror), and [NathanFlurry/herdr-plugin-jj-workspace](https://github.com/NathanFlurry/herdr-plugin-jj-workspace) — pinned Herdr plugins in the `pkgs/herdr` static registry.
 - `pkgs/herdr/vendor/herdr-plugin-pueue` — local Herdr Pueue dashboard source, vendored until that repository has a remote.
 - [osolmaz/ghzinga](https://github.com/osolmaz/ghzinga) — pinned Rust CLI and Herdr link handler for GitHub issue and pull request views.
