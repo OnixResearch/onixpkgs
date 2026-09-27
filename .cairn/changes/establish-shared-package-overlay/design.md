@@ -48,7 +48,7 @@ The migration base is onix-core `c5001ff2` with its uncommitted working tree of 
 - onixpkgs has no CI of its own yet. onix-core CI still builds every migrated package that a machine closure or the dev shell contains. Packages outside those closures, such as hx-oil and updater, are built only by `nix flake check` here.
 - `checks` build every exported package, including the ROCm llama.cpp builds and the DeepSeek draft conversion. A full check run is expensive without a warm cache.
 - A package set without the overlay silently resolves `dumbpipe`, `herdr`, `iroh-ssh`, `sendme`, `sone`, and `tuicr` from nixpkgs, which defines the same names.
-- `horizon` does not build, as it did not in onix-core. Its `cargoHash` is stale at the migration-base source revision `138c5571` and at onix-core HEAD's `3296dc84`, and `138c5571` also needs Git LFS font assets that the GitHub tarball lacks. The pin stays at the migration base. `nix flake check` fails until the package is repaired.
+- `horizon` did not build at first, as it did not in onix-core. Its `cargoHash` was stale at the migration-base source revision `138c5571`, and `138c5571` also needs Git LFS font assets that the GitHub tarball lacks. The follow-up keeps the pin, fetches the source with `git+https://github.com/peters/horizon?lfs=1`, and sets `cargoHash` to the vendor hash of that revision. The package then builds.
 
 ## Measured Verification
 

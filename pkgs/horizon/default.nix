@@ -23,7 +23,7 @@ rustPlatform.buildRustPackage {
 
   src = horizon-src;
 
-  cargoHash = "sha256-ApOnELnHeOZ0GhxgfqxpJHi/Bo3WeFFnxhDWzX50IRo=";
+  cargoHash = "sha256-w+j923HIslP5RFDPjc4GtcoIsT7cS53EG1S1rsm1K74=";
 
   nativeBuildInputs = [
     pkg-config

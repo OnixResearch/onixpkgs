@@ -13,4 +13,4 @@
 
 ## Phase 3: Follow-up
 
-- [ ] [serial] Repair `horizon`: fetch its Git LFS font assets and refresh `cargoHash`, or pin a buildable revision. r[onixpkgs.checks]
+- [x] [serial] Repair `horizon`: fetch its Git LFS font assets and refresh `cargoHash`, or pin a buildable revision. r[onixpkgs.checks]

@@ -16,9 +16,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # Source of pkgs/horizon.
+    # Source of pkgs/horizon. Its bundled fonts are Git LFS objects, which a
+    # GitHub tarball leaves as pointers, so fetch through git with LFS.
     horizon = {
-      url = "github:peters/horizon";
+      url = "git+https://github.com/peters/horizon?lfs=1";
       flake = false;
     };
 
