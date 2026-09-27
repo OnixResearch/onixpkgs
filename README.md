@@ -8,7 +8,7 @@ Add the flake input and let it follow your nixpkgs:
 
 ```nix
 inputs.onixpkgs = {
-  url = "git+file:///home/brittonr/git/OnixResearch/onixpkgs"; # local until a remote is published
+  url = "git+ssh://git@github.com/OnixResearch/onixpkgs.git";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 ```
@@ -59,7 +59,7 @@ Flake code that does not instantiate nixpkgs can use `inputs.onixpkgs.packages.$
   - aspen: imports `pkgs/kache` from a pinned onix-core source input.
   - onixos: its own overlay pins iroh-ssh 0.2.12 and mesh-llm 0.72.1, while onixpkgs has 0.2.9 and 0.72.2.
 
-  Each repository can switch to the overlay after onixpkgs has a published remote.
+  Each repository can switch to the published overlay and delete its copy.
 
 Maintainer: brittonr.
 

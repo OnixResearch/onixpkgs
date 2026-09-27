@@ -44,7 +44,7 @@ The migration base is onix-core `c5001ff2` with its uncommitted working tree of 
 
 ## Risks / Trade-offs
 
-- onixpkgs has no published remote. Consumers use a local `git+file` URL, so CI runners and other hosts cannot fetch it until a remote exists and the consumers switch their input URL.
+- Consumers fetch onixpkgs over SSH from `github.com/OnixResearch/onixpkgs`, as onix-core does for its other OnixResearch inputs. A host without SSH access to the OnixResearch organization cannot evaluate a consumer.
 - onixpkgs has no CI of its own yet. onix-core CI still builds every migrated package that a machine closure or the dev shell contains. Packages outside those closures, such as hx-oil and updater, are built only by `nix flake check` here.
 - `checks` build every exported package, including the ROCm llama.cpp builds and the DeepSeek draft conversion. A full check run is expensive without a warm cache.
 - A package set without the overlay silently resolves `dumbpipe`, `herdr`, `iroh-ssh`, `sendme`, `sone`, and `tuicr` from nixpkgs, which defines the same names.

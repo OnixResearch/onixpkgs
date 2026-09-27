@@ -10,7 +10,7 @@ Custom packages in the Onix stack live in each consuming repository. onix-core c
 - Run package builds, the Collie controller and remote-session tests, and Nix formatting as `checks`.
 - Keep dgx-machine, tenstorrent-compat, nix-grpc-store, and aspen-uma-helper in onix-core. They depend on onix-core's machine inventory, the private tenstorrent.nix flake, or onix-core's Nix fork.
 
-Immediate outcome: onix-core consumes its packages from the overlay instead of `pkgs/`. Durable capability: one maintained package set for the stack. Current consumer: onix-core. Adoption path: site, trellis, aspen, and onixos can switch their copies after onixpkgs has a published remote. Maintenance owner: brittonr.
+Immediate outcome: onix-core consumes its packages from the overlay instead of `pkgs/`. Durable capability: one maintained package set for the stack. Current consumer: onix-core. Adoption path: site, trellis, aspen, and onixos can switch their copies to the overlay published at `github.com/OnixResearch/onixpkgs`. Maintenance owner: brittonr.
 
 ## Impact
 
