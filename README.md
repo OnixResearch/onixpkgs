@@ -70,8 +70,10 @@ wrappedRust = kacheLib.mkWrappedRustPackage {
 
 - onix-core applies the overlay to its NixOS and nix-darwin machines, whose Home Manager profiles share that package set. It also applies the overlay to its DGX machines through `modules/dgx-machine` and to its check harnesses. Its dev shell uses `packages`. dgx-machine, tenstorrent-compat, nix-grpc-store, and aspen-uma-helper stay in onix-core, because they depend on onix-core's machine inventory, the private tenstorrent.nix flake, or its Nix fork.
 - site takes `celld` from the overlay and trellis takes `tracey`.
-- aspen still imports `pkgs/kache` and `lib/kache-nix-rust.nix` from a pinned onix-core source. It can switch to `pkgs.kache` and `lib.kacheNixRust`.
-- onixos still builds its own iroh-ssh and headless Mesh LLM. `pkgs/iroh-ssh` and `pkgs/mesh-llm-headless` carry the same definitions, so it can switch to the overlay and keep its own guard and bundle around Mesh LLM.
+- aspen takes `kache` from the overlay and builds its kache rustc wrappers with `lib.kacheNixRust`.
+- onixos takes `iroh-ssh` and `mesh-llm-headless` from an overlaid package set and wraps Mesh LLM with its own guard and bundle.
+
+site, trellis, aspen, and onixos pin onixpkgs by revision or through their locks, so a package change reaches them when they relock.
 
 Maintainer: brittonr.
 

@@ -28,8 +28,8 @@ onixpkgs holds package definitions: derivations, source pins, and package-local 
 ## Consumers
 
 - onix-core follows this flake's `nixpkgs`, `llm-agents`, `wrappers`, and `treefmt-nix` inputs from its own lock. Before merging a package change, evaluate the onix-core machines that use the package.
-- site (`celld`) and trellis (`tracey`) also apply the overlay. A package change reaches them when they relock `onixpkgs`.
-- Do not push or publish unless explicitly requested.
+- site (`celld`), trellis (`tracey`), aspen (`kache` and `lib.kacheNixRust`), and onixos (`iroh-ssh` and `mesh-llm-headless`) also use this flake. A package change reaches them when they relock `onixpkgs`. aspen and onixos pin a revision in the input URL, so they need a URL edit.
+- Do not push or publish unless explicitly requested. When a push of `main` is requested, push it to both remotes: `origin` on GitHub, which consumers fetch, and the private Radicle remote `rad` (`rad:z4HzpZp4taChnHMVL3gtMjF1iesp1`), for example `jj git push --remote rad --bookmark main`.
 
 ## Lifecycle
 
