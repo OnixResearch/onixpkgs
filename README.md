@@ -1,0 +1,83 @@
+# onixpkgs
+
+onixpkgs publishes Onix's custom packages as one overlay over nixpkgs. A repository in the stack applies the overlay and uses `pkgs.<name>` instead of carrying its own copy of the package.
+
+## Use
+
+Add the flake input and let it follow your nixpkgs:
+
+```nix
+inputs.onixpkgs = {
+  url = "git+file:///home/brittonr/git/OnixResearch/onixpkgs"; # local until a remote is published
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+```
+
+Apply the overlay wherever you instantiate nixpkgs:
+
+```nix
+# NixOS, nix-darwin, or Home Manager without useGlobalPkgs
+nixpkgs.overlays = [ inputs.onixpkgs.overlays.default ];
+
+# Flake code
+pkgs = import nixpkgs {
+  inherit system;
+  overlays = [ inputs.onixpkgs.overlays.default ];
+  config = { };
+};
+```
+
+Flake code that does not instantiate nixpkgs can use `inputs.onixpkgs.packages.${system}.<name>`. These packages are built from the overlay over plain nixpkgs. They do not see the consumer's nixpkgs config or other overlays.
+
+## Layout
+
+- `overlay.nix` is `overlays.default`. Each directory `pkgs/<name>/` becomes `pkgs.<name>`, built with `final.callPackage`. `callArgs` holds arguments that do not come from the package set, such as flake inputs. `callers` holds packages built by a scoped callPackage.
+- `pkgs/<name>/default.nix` is a callPackage function. Patches, local sources, and package tests live beside it.
+- `herdr-unwrapped` is the upstream Herdr from `llm-agents.nix`. `pkgs.herdr` wraps it. A later overlay can replace the base.
+- `flake.nix` exports `overlays.default`, `packages`, `checks`, and `formatter`. `exportSystems` limits where a package is exported. An unlisted package is exported on every system its `meta.platforms` allows.
+
+## Add a package
+
+1. Create `pkgs/<name>/default.nix`. The directory name is the attribute name.
+2. Take dependencies as callPackage arguments. Refer to other onixpkgs packages by attribute name, not by path, so a later overlay can replace them.
+3. Put arguments that the package set cannot supply in `callArgs` in `overlay.nix`.
+4. Restrict export systems with `meta.platforms` or `exportSystems`.
+5. Run `nix build .#<name>` and `nix build .#checks.<system>.formatting`.
+
+`nix run .#updater -- --list` lists packages that have a `nix-update-args` file. `nix run .#updater -- --package <name>` runs nix-update for one of them.
+
+## Checks
+
+`nix flake check -L` builds every exported package, runs the Collie controller and remote-session tests, and runs the treefmt check (nixfmt, deadnix, statix, ruff, shellcheck, shfmt, rustfmt, prettier). The ROCm llama.cpp builds and the DeepSeek draft conversion are large; the conversion downloads three checkpoint shards. `nix fmt` applies the same formatters. `ruff.toml` carries onix-core's Python lint settings.
+
+## Consumers
+
+- onix-core applies the overlay to its NixOS and nix-darwin machines, whose Home Manager profiles share that package set. It also applies the overlay to its DGX machines through `modules/dgx-machine` and to its check harnesses. Its dev shell uses `packages`. dgx-machine, tenstorrent-compat, nix-grpc-store, and aspen-uma-helper stay in onix-core, because they depend on onix-core's machine inventory, the private tenstorrent.nix flake, or its Nix fork.
+- Other stack repositories still define copies of these packages:
+  - site: `site/nix/celld.nix` has the same content as `pkgs/celld`.
+  - trellis: builds tracey 1.3.0 from a `releases/latest` URL.
+  - aspen: imports `pkgs/kache` from a pinned onix-core source input.
+  - onixos: its own overlay pins iroh-ssh 0.2.12 and mesh-llm 0.72.1, while onixpkgs has 0.2.9 and 0.72.2.
+
+  Each repository can switch to the overlay after onixpkgs has a published remote.
+
+Maintainer: brittonr.
+
+## Claim boundary
+
+onixpkgs owns package definitions, their source pins, and package-local patches and tests. A successful build shows only that the derivation realizes on that system. It does not show that the package works on a host, that a consumer's service configuration is valid, or that the upstream software is correct. Service modules, machine policy, secrets, and deployment evidence stay with the consumers.
+
+## References
+
+- [Mastering Nixpkgs Overlays](https://nixcademy.com/posts/mastering-nixpkgs-overlays-techniques-and-best-practice/), the [NixOS wiki overlay page](https://wiki.nixos.org/wiki/Overlays), and [NixOS & Flakes: Overlays](https://nixos-and-flakes.thiscute.world/nixpkgs/overlays) — overlay conventions followed by `overlay.nix`: `final`/`prev` roles, no `rec`, dependencies through `final`, and shared choices exposed as attributes rather than overlay parameters.
+- [numtide/llm-agents.nix](https://github.com/numtide/llm-agents.nix) — upstream Herdr binary (`herdr-unwrapped`) wrapped by `pkgs/herdr`.
+- [brittonr/wrappers](https://github.com/brittonr/wrappers) — wrapper library used by `pkgs/herdr`.
+- [peters/horizon](https://github.com/peters/horizon) — source input of `pkgs/horizon`.
+- [smarzban/herdr-file-viewer](https://github.com/smarzban/herdr-file-viewer), [persiyanov/herdr-reviewr](https://github.com/persiyanov/herdr-reviewr), [paulbkim-dev/vim-herdr-navigation](https://github.com/paulbkim-dev/vim-herdr-navigation), [nikok6/herdr-mirror](https://github.com/nikok6/herdr-mirror), and [NathanFlurry/herdr-plugin-jj-workspace](https://github.com/NathanFlurry/herdr-plugin-jj-workspace) — pinned Herdr plugins in the `pkgs/herdr` static registry.
+- `pkgs/herdr/vendor/herdr-plugin-pueue` — local Herdr Pueue dashboard source, vendored until that repository has a remote.
+- [osolmaz/ghzinga](https://github.com/osolmaz/ghzinga) — pinned Rust CLI and Herdr link handler for GitHub issue and pull request views.
+- [umakers/collie-herdr](https://github.com/umakers/collie-herdr) — phone PWA for Herdr over Tailscale. `pkgs/collie-herdr/UPSTREAM.md` describes the package and trust boundaries.
+- [Noelo-Lab/kuna](https://github.com/Noelo-Lab/kuna) — binaries and SLEIGH specs for the Kuna decompiler package.
+- [PrimeIntellect-ai/prime-agent](https://github.com/PrimeIntellect-ai/prime-agent) — upstream coding and research agent.
+- [OpenBubbles/openbubbles-app](https://github.com/OpenBubbles/openbubbles-app) — pinned Linux release bundle wrapped as `pkgs/openbubbles`.
+- [denoland/celld](https://github.com/denoland/celld), [kunobi-ninja/kache](https://github.com/kunobi-ninja/kache), [murerkinn/bookshelf](https://github.com/murerkinn/bookshelf), and [Mesh-LLM/mesh-llm](https://github.com/Mesh-LLM/mesh-llm) — upstream sources of the packages behind onix-core's Celld, Kache, Bookshelf, and Mesh-LLM services.
