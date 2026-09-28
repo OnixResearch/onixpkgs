@@ -87,6 +87,7 @@ onixpkgs owns package definitions, their source pins, and package-local patches 
 - [numtide/llm-agents.nix](https://github.com/numtide/llm-agents.nix) — upstream Herdr binary (`herdr-unwrapped`) wrapped by `pkgs/herdr`.
 - [brittonr/wrappers](https://github.com/brittonr/wrappers) — wrapper library used by `pkgs/herdr`.
 - [peters/horizon](https://github.com/peters/horizon) — source input of `pkgs/horizon`. It is fetched through git with LFS, because its bundled fonts are LFS objects.
+- [domenkozar/agentaps](https://github.com/domenkozar/agentaps) — upstream of `pkgs/agentaps`. The package pins a `main` commit after the v0.2.1 release, because that release has no SSH projects or Web Connect.
 - [rustonbsd/iroh-ssh](https://github.com/rustonbsd/iroh-ssh) — upstream of `pkgs/iroh-ssh`. `iroh-ssh-connection-type-evidence.patch` makes `iroh-ssh connect` print the connection type.
 - [smarzban/herdr-file-viewer](https://github.com/smarzban/herdr-file-viewer), [persiyanov/herdr-reviewr](https://github.com/persiyanov/herdr-reviewr), [paulbkim-dev/vim-herdr-navigation](https://github.com/paulbkim-dev/vim-herdr-navigation), [nikok6/herdr-mirror](https://github.com/nikok6/herdr-mirror), and [NathanFlurry/herdr-plugin-jj-workspace](https://github.com/NathanFlurry/herdr-plugin-jj-workspace) — pinned Herdr plugins in the `pkgs/herdr` static registry.
 - `pkgs/herdr/vendor/herdr-plugin-pueue` — local Herdr Pueue dashboard source, vendored until that repository has a remote.
