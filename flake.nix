@@ -22,6 +22,8 @@
       url = "git+https://github.com/peters/horizon?lfs=1";
       flake = false;
     };
+    # The evaluator links only the Onix Nix 2.36 component cohort.
+    nix-onix.url = "github:onixcomputer/nix/f93f28ad9dce007baae13aa461c16abf656d1171";
 
     treefmt-nix = {
       url = "github:numtide/treefmt-nix";
@@ -76,6 +78,7 @@
         laya = linux;
         laya-cpp = linux;
         lemonade-server = linux;
+        nix-eval-jobs = x86_64Linux;
         # ROCm builds for gfx1151; nixpkgs ships ROCm for x86_64-linux only.
         llamacpp-rocm-dspark = x86_64Linux;
         llamacpp-rocm-qwen4exp = x86_64Linux;
@@ -142,6 +145,13 @@
           iroh-ssh-child-status = import ./pkgs/iroh-ssh/child-status-check.nix {
             inherit pkgs;
             irohSsh = pkgs.iroh-ssh;
+          };
+        }
+        // lib.optionalAttrs (packages ? nix-eval-jobs) {
+          nix-eval-jobs-jsonl = import ./pkgs/nix-eval-jobs/check.nix {
+            inherit pkgs;
+            evaluator = pkgs.nix-eval-jobs;
+            nixOnix = inputs.nix-onix;
           };
         }
         // lib.optionalAttrs (packages ? mesh-llm-headless) {

@@ -1,0 +1,24 @@
+diff --git a/src/cache-status-resolver.cc b/src/cache-status-resolver.cc
+--- a/src/cache-status-resolver.cc
++++ b/src/cache-status-resolver.cc
+@@ -252 +252 @@
+-        for (const auto &[inputDrvPath, inputNode] : derivation.inputDrvs.map) {
++        for (const auto &[inputDrvPath, inputNode] : derivation.inputs.drvs.map) {
+@@ -273 +273 @@
+-    for (const auto &[inputDrvPath, inputNode] : derivation.inputDrvs.map) {
++    for (const auto &[inputDrvPath, inputNode] : derivation.inputs.drvs.map) {
+diff --git a/src/constituents.cc b/src/constituents.cc
+--- a/src/constituents.cc
++++ b/src/constituents.cc
+@@ -119 +119 @@
+-        drv.inputDrvs.map[childDrvPath].value = {
++        drv.inputs.drvs.map[childDrvPath].value = {
+@@ -137 +137 @@
+-    drv.fillInOutputPaths(*store);
++    nix::derivation::fillInOutputPaths(drv, *store);
+diff --git a/src/drv.cc b/src/drv.cc
+--- a/src/drv.cc
++++ b/src/drv.cc
+@@ -100 +100 @@
+-    for (const auto &[inputDrvPath, inputNode] : drv.inputDrvs.map) {
++    for (const auto &[inputDrvPath, inputNode] : drv.inputs.drvs.map) {
