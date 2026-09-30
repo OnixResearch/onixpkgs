@@ -19,6 +19,7 @@ let
       wrapperLib = inputs.wrappers.lib;
     };
     horizon.horizon-src = inputs.horizon;
+    nix-eval-jobs-onix.nixOnix = inputs.nix-onix;
   };
 
   # Packages built by a scoped callPackage instead of the top-level one.

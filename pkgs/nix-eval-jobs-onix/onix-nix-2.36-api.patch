@@ -1,0 +1,82 @@
+diff --git a/src/eval-args.cc b/src/eval-args.cc
+--- a/src/eval-args.cc
++++ b/src/eval-args.cc
+@@ -212,1 +212,1 @@
+-                nix::parseFlakeRef(nix::fetchSettings, flakeRef,
++                nix::parseFlakeRef(flakeRef,
+diff --git a/src/eval-log.hh b/src/eval-log.hh
+--- a/src/eval-log.hh
++++ b/src/eval-log.hh
+@@ -5,0 +6,1 @@
++#include <span>
+@@ -34,6 +35,6 @@
+-    void log(nix::Verbosity lvl, std::string_view msg) override;
+-    void logEI(const nix::ErrorInfo &info) override;
+-    void warn(const std::string &msg) override;
++    void log(nix::Verbosity lvl, std::string_view msg) noexcept override;
++    void logEI(const nix::ErrorInfo &info) noexcept override;
++    void warn(const std::string &msg) noexcept override;
+     void startActivity(nix::ActivityId act, nix::Verbosity lvl,
+                        nix::ActivityType type, const std::string &text,
+-                       const Fields &fields, nix::ActivityId parent) override {
++                       std::span<const Field> fields, nix::ActivityId parent) noexcept override {
+@@ -42,7 +43,11 @@
+-    void stopActivity(nix::ActivityId act) override {
++    void stopActivity(nix::ActivityId act) noexcept override {
+         inner->stopActivity(act);
+     }
+     void result(nix::ActivityId act, nix::ResultType type,
+-                const Fields &fields) override {
++                std::span<const Field> fields) noexcept override {
+         inner->result(act, type, fields);
+     }
++    void result(nix::ActivityId act, nix::ResultType type,
++                const nlohmann::json &json) noexcept override {
++        inner->result(act, type, json);
++    }
+diff --git a/src/eval-log.cc b/src/eval-log.cc
+--- a/src/eval-log.cc
++++ b/src/eval-log.cc
+@@ -27,1 +27,1 @@
+-void EvalLogCapture::log(nix::Verbosity lvl, std::string_view msg) {
++void EvalLogCapture::log(nix::Verbosity lvl, std::string_view msg) noexcept {
+@@ -36,1 +36,1 @@
+-void EvalLogCapture::logEI(const nix::ErrorInfo &info) {
++void EvalLogCapture::logEI(const nix::ErrorInfo &info) noexcept {
+@@ -44,1 +44,1 @@
+-void EvalLogCapture::warn(const std::string &msg) {
++void EvalLogCapture::warn(const std::string &msg) noexcept {
+diff --git a/src/cache-status-resolver.cc b/src/cache-status-resolver.cc
+--- a/src/cache-status-resolver.cc
++++ b/src/cache-status-resolver.cc
+@@ -213,1 +213,1 @@
+-         derivation.outputsAndOptPaths(*evalStore)) {
++         nix::derivation::outputsAndOptPaths(derivation, *evalStore)) {
+diff --git a/src/worker.cc b/src/worker.cc
+--- a/src/worker.cc
++++ b/src/worker.cc
+@@ -74,1 +74,1 @@
+-auto releaseExprTopLevelValue(nix::EvalState &state, nix::Bindings &autoArgs,
++auto releaseExprTopLevelValue(nix::EvalState &state, const nix::Bindings &autoArgs,
+@@ -97,1 +97,1 @@
+-            nix::fetchSettings, args.releaseExpr,
++            args.releaseExpr,
+@@ -105,4 +105,2 @@
+-        flakeRef = nix::FlakeRef::fromAttrs(
+-            nix::fetchSettings,
+-            nix::fetchers::jsonToAttrs(
+-                nlohmann::json::parse(args.lockedFlakeAttrs)));
++        flakeRef = nix::FlakeRef::fromAttrs(nix::fetchers::jsonToAttrs(
++            nlohmann::json::parse(args.lockedFlakeAttrs)));
+@@ -276,1 +276,1 @@
+-                         nix::Bindings &autoArgs, MyArgs &args)
++                         const nix::Bindings &autoArgs, MyArgs &args)
+@@ -307,1 +307,1 @@
+-    nix::Bindings &autoArgs;
++    const nix::Bindings &autoArgs;
+@@ -432,1 +432,1 @@
+-            nix::fetchSettings, args.releaseExpr,
++            args.releaseExpr,
+@@ -468,1 +468,1 @@
+-    nix::Bindings &autoArgs = *args.getAutoArgs(*state);
++    const nix::Bindings &autoArgs = *args.getAutoArgs(*state);

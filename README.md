@@ -51,6 +51,18 @@ wrappedRust = kacheLib.mkWrappedRustPackage {
 - `flake.nix` exports `overlays.default`, `lib`, `packages`, `checks`, and `formatter`. `exportSystems` limits where a package is exported. An unlisted package is exported on every system its `meta.platforms` allows.
 - `lib/kache-nix-rust.nix` is `lib.kacheNixRust`. `lib/kache-nix-rust-contract.nix` tests it with a fake kache.
 - `mesh-llm-headless` is the headless Mesh LLM 0.72.1 build that onixos runs. Its `backend` argument selects `cpu`, the default, or `vulkan`: `pkgs.mesh-llm-headless.override { backend = "vulkan"; }`. It writes provenance and license-inventory JSON under `share/mesh-llm`. `mesh-llm` is a separate 0.72.2 build with plugins, which onix-core's services run.
+- `nix-eval-jobs-onix` exports on x86_64-linux as a separate evaluator from
+  generic `pkgs.nix-eval-jobs`, preserving consumers' own Nix ABI overrides.
+  It links the Onix Nix fork `f93f28ad9dce007baae13aa461c16abf656d1171`
+  (2.36.0), not stock Nix. It pins NixOS/nix-eval-jobs source
+  `9f1553afabd95f9f59951f5c946e86005af7196a`
+  (`sha256-t1FbcjvTWQ1WO3hJNKN+viNXuz4BX9Pte5K4F+IJLDk=`) and carries
+  package-local derivation and API patches for that exact fork. A different
+  fork revision or CLI version is rejected.
+  `checks.x86_64-linux.nix-eval-jobs-onix-jsonl` covers dependent derivation
+  discovery, per-job errors and wrong-fork rejection.
+  Consumers own immutable jobset inputs, plugins and evaluation policy; a
+  package build or JSONL observation does not confer host or deployment authority.
 
 ## Add a package
 
@@ -65,6 +77,21 @@ wrappedRust = kacheLib.mkWrappedRustPackage {
 ## Checks
 
 `nix flake check -L` builds every exported package and the vulkan variant of `mesh-llm-headless`. It runs the Collie controller and remote-session tests, the iroh-ssh child-status test, the kache wrapper contract on x86_64-linux, and the treefmt check (nixfmt, deadnix, statix, ruff, shellcheck, shfmt, rustfmt, prettier). The ROCm llama.cpp builds and the DeepSeek draft conversion are large; the conversion downloads three checkpoint shards. `nix fmt` applies the same formatters. `ruff.toml` carries onix-core's Python lint settings.
+
+## Lifecycle
+
+Native Cairn changes live under `.cairn/`. `cairn-policy/PROVENANCE.md`
+identifies the authenticated upstream revision and exact four-file Nickel
+source closure. Regenerate the checked policy JSON, never hand-edit it:
+
+```sh
+cairn policy export --source cairn-policy/default.ncl --output cairn-policy/generated/cairn-policy.json
+```
+
+`cairn validate --root .` checks the repository lifecycle;
+`cairn-policy/check-policy.sh` requires `cairn`, `nickel`, and `jq` and checks
+policy freshness, strict proposal/design/tasks gates for the evaluator change,
+and rejection of a policy missing the required `outcome-machine` profile.
 
 ## Consumers
 
