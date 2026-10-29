@@ -1,11 +1,13 @@
-"""Expose the loopback Underclass Codex pool to Mesh-LLM.
+"""Expose the loopback Underclass Codex and OpenCode Go pool to Mesh-LLM.
 
 Mesh-LLM 0.72.2 probes external endpoints with unauthenticated `/v1/models`
 requests and forwards all inference to them as chat completions. Underclass
 requires its proxy key, and its Codex backend accepts only streamed Responses
-requests. This gateway listens on loopback, injects the key read from a systemd
-credential, translates chat completions to Responses and translates the event
-stream back. It never logs prompts, outputs or credentials.
+requests. This gateway listens on loopback and injects the key read from a
+systemd credential. It translates Codex chat completions to Responses and the
+event stream back, and forwards OpenCode Go chat completions, which that
+backend serves itself, as they are. It never logs prompts, outputs or
+credentials.
 """
 
 from __future__ import annotations
@@ -27,23 +29,20 @@ from urllib.parse import urlsplit
 JSON = dict[str, Any]
 
 CODEX_OWNER = "underclass-codex"
+OPENCODE_GO_OWNER = "underclass-opencode-go"
+ADVERTISED_OWNERS = frozenset({CODEX_OWNER, OPENCODE_GO_OWNER})
+# Underclass catalogs OpenCode Go models under this namespace (its ADR 0027).
+OPENCODE_GO_NAMESPACE = "opencode-go/"
 MAX_BODY_BYTES = 64 * 1024 * 1024  # Underclass's own request-body limit.
 MAX_ERROR_BYTES = 64 * 1024
 MAX_LINE_BYTES = 64 * 1024
 UPSTREAM_IDLE_TIMEOUT = 600.0
 
 # r[impl onix.underclass.mesh.gateway]
-# `stream` and `stream_options` are answered here. The Codex subscription
-# backend rejects output-token caps, and Mesh-LLM inserts llama.cpp
-# chat-template reasoning switches; neither is forwarded. Every other field
-# reaches Underclass unchanged, so the real backend accepts or rejects it.
-LOCAL_FIELDS = frozenset(
+# Mesh-LLM inserts these llama.cpp chat-template reasoning switches. Neither
+# backend understands them; the request's own `reasoning_effort` stays.
+TEMPLATE_FIELDS = frozenset(
     {
-        "stream",
-        "stream_options",
-        "max_tokens",
-        "max_completion_tokens",
-        "max_output_tokens",
         "chat_template_kwargs",
         "thinking_budget",
         "enable_thinking",
@@ -56,6 +55,21 @@ LOCAL_FIELDS = frozenset(
         "enable_think",
         "think_enabled",
     }
+)
+# For Codex, `stream` and `stream_options` are answered here, and the Codex
+# subscription backend rejects output-token caps. Every other field reaches
+# Underclass unchanged, so the real backend accepts or rejects it.
+LOCAL_FIELDS = (
+    frozenset(
+        {
+            "stream",
+            "stream_options",
+            "max_tokens",
+            "max_completion_tokens",
+            "max_output_tokens",
+        }
+    )
+    | TEMPLATE_FIELDS
 )
 
 # Headers worth returning when Underclass itself answers with an error.
@@ -243,20 +257,44 @@ def responses_request(chat: object) -> JSON:
     return request
 
 
-def conversation_key(items: list[JSON]) -> str:
+def conversation_key(items: list[object]) -> str:
     """Derive a stable Underclass affinity key from a conversation's opening.
 
     Every turn of a chat repeats its opening messages, so hashing them through
     the first user message keeps the conversation on one pooled account, and
     its prompt cache warm, when the client sends no key of its own.
     """
-    opening: list[JSON] = []
+    opening: list[object] = []
     for item in items:
         opening.append(item)
-        if item.get("role") == "user":
+        if isinstance(item, dict) and item.get("role") == "user":
             break
     digest = hashlib.sha256(json.dumps(opening, sort_keys=True).encode())
     return f"mesh-{digest.hexdigest()[:32]}"
+
+
+def is_opencode_go(chat: object) -> bool:
+    """Whether a chat request names an Underclass OpenCode Go model."""
+    model = chat.get("model") if isinstance(chat, dict) else None
+    return isinstance(model, str) and model.startswith(OPENCODE_GO_NAMESPACE)
+
+
+# r[impl onix.underclass.mesh.gateway]
+def opencode_go_request(chat: JSON, *, session: str | None) -> JSON:
+    """Prepare a chat request for an Underclass OpenCode Go model.
+
+    OpenCode Go serves chat completions itself, so everything but Mesh-LLM's
+    chat-template switches is forwarded: streaming, output caps and reasoning
+    effort included. Without a key of the client's own, in the body or as the
+    `session-id` header, the conversation gets a key derived from its opening,
+    as on the Codex path.
+    """
+    request = {key: value for key, value in chat.items() if key not in TEMPLATE_FIELDS}
+    messages = request.get("messages")
+    keyless = session is None and not any(field in request for field in AFFINITY_FIELDS)
+    if keyless and isinstance(messages, list):
+        request["prompt_cache_key"] = conversation_key(messages)
+    return request
 
 
 def chat_usage(usage: object) -> JSON | None:
@@ -559,7 +597,7 @@ class Handler(BaseHTTPRequestHandler):
         print(message, file=sys.stderr, flush=True)
 
     def models(self) -> None:
-        """Advertise the Codex-backed Underclass models."""
+        """Advertise the Codex and OpenCode Go Underclass models."""
         try:
             connection, response = self.server.upstream.request("GET", "/models")
         except OSError as error:
@@ -582,7 +620,8 @@ class Handler(BaseHTTPRequestHandler):
             models = [
                 model
                 for model in catalog.get("data") or []
-                if isinstance(model, dict) and model.get("owned_by") == CODEX_OWNER
+                if isinstance(model, dict)
+                and model.get("owned_by") in ADVERTISED_OWNERS
             ]
             self.send_json(200, {"object": "list", "data": models})
         finally:
@@ -592,6 +631,13 @@ class Handler(BaseHTTPRequestHandler):
         started = time.monotonic()
         try:
             chat = json.loads(self.read_body())
+        except (RequestError, ValueError) as error:
+            self.fail(400, str(error), "invalid_request_error")
+            return
+        if is_opencode_go(chat):
+            self.opencode_go_chat(chat, started)
+            return
+        try:
             request = responses_request(chat)
         except (RequestError, ValueError) as error:
             self.fail(400, str(error), "invalid_request_error")
@@ -640,6 +686,79 @@ class Handler(BaseHTTPRequestHandler):
             self.note(
                 f"chat model={request['model']} stream={stream} {outcome} ms={elapsed}"
             )
+
+    def opencode_go_chat(self, chat: JSON, started: float) -> None:
+        """Forward an OpenCode Go chat completion and relay the answer."""
+        session = self.headers.get("session-id") or None
+        request = opencode_go_request(chat, session=session)
+        stream = request.get("stream") is True
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream" if stream else "application/json",
+        }
+        if session:
+            headers["session-id"] = session
+        outcome = "client disconnected"
+        try:
+            connection, response = self.server.upstream.request(
+                "POST", "/chat/completions", json.dumps(request).encode(), headers
+            )
+        except OSError as error:
+            self.note(f"chat: underclass unreachable: {error}")
+            self.fail(502, "Underclass is unreachable", "upstream_error")
+            return
+        try:
+            if response.status != 200:
+                outcome = f"underclass status {response.status}"
+                self.relay(response, response.read(MAX_ERROR_BYTES))
+            elif stream:
+                outcome = self.relay_stream(response)
+            else:
+                outcome = "relayed"
+                self.relay(response, response.read(MAX_BODY_BYTES))
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            connection.close()
+            elapsed = int((time.monotonic() - started) * 1000)
+            self.note(
+                f"chat model={request['model']} stream={stream} {outcome} ms={elapsed}"
+            )
+
+    def relay_stream(self, response: http.client.HTTPResponse) -> str:
+        """Pass an Underclass event stream through, one whole event per chunk.
+
+        Mesh-LLM 0.72.2 splits the endpoint's response body into events at blank
+        lines without decoding the chunked framing, so an event cut across two
+        chunks reaches it corrupted. Writing each event as its own chunk, as the
+        Codex path does, leaves only whole chunk-size lines between events.
+        """
+        self.send_response(200)
+        self.send_header(
+            "Content-Type", response.getheader("Content-Type") or "text/event-stream"
+        )
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Transfer-Encoding", "chunked")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        event = bytearray()
+        while True:
+            try:
+                line = response.readline(MAX_LINE_BYTES)
+            except (OSError, http.client.HTTPException) as error:
+                # The body stays unterminated, so the client sees the failure.
+                return f"underclass stream failed: {error}"
+            if not line:
+                break
+            event += line
+            if line in {b"\n", b"\r\n"}:
+                self.write_chunk(bytes(event))
+                event.clear()
+        if event:
+            self.write_chunk(bytes(event))
+        self.write_chunk(b"")
+        return "relayed"
 
     def read_events(
         self, response: http.client.HTTPResponse, translator: ChatStream
@@ -734,7 +853,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(status, {"error": {"message": message, "type": kind}})
 
     def relay(self, response: http.client.HTTPResponse, body: bytes) -> None:
-        """Return an Underclass error unchanged."""
+        """Return an Underclass answer, typically an error, unchanged."""
         self.send_response(response.status)
         self.send_header(
             "Content-Type", response.getheader("Content-Type") or "application/json"

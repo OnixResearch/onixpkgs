@@ -35,7 +35,7 @@ stdenvNoCC.mkDerivation {
   '';
 
   meta = {
-    description = "Loopback chat-completions gateway exposing an Underclass Codex pool to Mesh-LLM";
+    description = "Loopback chat-completions gateway exposing an Underclass Codex and OpenCode Go pool to Mesh-LLM";
     license = lib.licenses.asl20;
     mainProgram = "underclass-mesh-gateway";
     platforms = lib.platforms.linux;

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import socket
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import ClassVar
@@ -302,9 +303,39 @@ def test_incomplete_and_failed_responses():
     assert stream.error["code"] == "server_error"
 
 
+GO_COMPLETION = {
+    "id": "chatcmpl-go",
+    "object": "chat.completion",
+    "choices": [
+        {
+            "index": 0,
+            "message": {"role": "assistant", "content": "pong"},
+            "finish_reason": "stop",
+        }
+    ],
+    "usage": {"prompt_tokens": 5, "completion_tokens": 1, "total_tokens": 6},
+}
+# Chat chunks as OpenCode Go streams them, reasoning and usage included.
+GO_STREAM = (
+    b'data: {"object":"chat.completion.chunk","choices":[{"index":0,'
+    b'"delta":{"role":"assistant","reasoning_content":"hm"}}]}\n\n'
+    b'data: {"object":"chat.completion.chunk","choices":[{"index":0,'
+    b'"delta":{"content":"pong"},"finish_reason":"stop"}]}\n\n'
+    b'data: {"object":"chat.completion.chunk","choices":[],'
+    b'"usage":{"prompt_tokens":5,"completion_tokens":1}}\n\n'
+    b"data: [DONE]\n\n"
+)
+GO_REFUSAL = {
+    "type": "error",
+    "error": {"type": "GoUsageLimitError", "message": "Go usage limit exceeded"},
+}
+
+
 class FakeUnderclass(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     requests: ClassVar[list[dict]] = []
+    paths: ClassVar[list[str]] = []
+    sessions: ClassVar[list[str | None]] = []
 
     def log_message(self, fmt, *args):
         pass
@@ -330,6 +361,10 @@ class FakeUnderclass(BaseHTTPRequestHandler):
                 "data": [
                     {"id": "gpt-5.5", "owned_by": "underclass-codex"},
                     {"id": "gpt-4.1", "owned_by": "underclass-copilot"},
+                    {
+                        "id": "opencode-go/kimi-k3",
+                        "owned_by": "underclass-opencode-go",
+                    },
                 ],
             }
             self.reply(200, json.dumps(catalog).encode())
@@ -340,6 +375,11 @@ class FakeUnderclass(BaseHTTPRequestHandler):
         if not self.authorized():
             return
         FakeUnderclass.requests.append(body)
+        FakeUnderclass.paths.append(self.path)
+        FakeUnderclass.sessions.append(self.headers.get("session-id"))
+        if self.path == "/v1/chat/completions":
+            self.opencode_go(body)
+            return
         if "temperature" in body:
             detail = {"detail": "Unsupported parameter: temperature"}
             self.reply(400, json.dumps(detail).encode())
@@ -354,6 +394,31 @@ class FakeUnderclass(BaseHTTPRequestHandler):
             for event in events
         )
         self.reply(200, stream, "text/event-stream")
+
+    def opencode_go(self, body):
+        """Answer like OpenCode Go through Underclass's chat completions."""
+        if body["model"] == "opencode-go/spent":
+            payload = json.dumps(GO_REFUSAL).encode()
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "120")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        elif body.get("stream"):
+            # Underclass forwards bytes as they arrive, so its chunk boundaries
+            # fall anywhere, inside an event included.
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Transfer-Encoding", "chunked")
+            self.end_headers()
+            for start in range(0, len(GO_STREAM), 7):
+                piece = GO_STREAM[start : start + 7]
+                self.wfile.write(b"%x\r\n%b\r\n" % (len(piece), piece))
+            self.wfile.write(b"0\r\n\r\n")
+        else:
+            answer = {**GO_COMPLETION, "model": body["model"]}
+            self.reply(200, json.dumps(answer).encode())
 
 
 def running(server):
@@ -376,13 +441,17 @@ def servers():
 @pytest.fixture
 def call(servers):
     FakeUnderclass.requests.clear()
+    FakeUnderclass.paths.clear()
+    FakeUnderclass.sessions.clear()
 
-    def request(method, path, body=None, server="current"):
+    def request(method, path, body=None, server="current", headers=None):
         port = servers[server].server_address[1]
         connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
         payload = None if body is None else json.dumps(body).encode()
-        headers = {} if body is None else {"Content-Type": "application/json"}
-        connection.request(method, path, body=payload, headers=headers)
+        sent = {} if body is None else {"Content-Type": "application/json"}
+        connection.request(
+            method, path, body=payload, headers={**sent, **(headers or {})}
+        )
         response = connection.getresponse()
         result = (response.status, response.getheader("Content-Type"), response.read())
         connection.close()
@@ -404,10 +473,13 @@ def sse_chunks(body):
     return [json.loads(event) for event in events[:-1]]
 
 
-def test_models_lists_only_codex_backed_entries(call):
+def test_models_list_codex_and_opencode_go_entries(call):
     status, _, body = call("GET", "/v1/models")
     assert status == 200
-    assert [model["id"] for model in json.loads(body)["data"]] == ["gpt-5.5"]
+    assert [model["id"] for model in json.loads(body)["data"]] == [
+        "gpt-5.5",
+        "opencode-go/kimi-k3",
+    ]
 
 
 def test_streaming_chat_is_translated(call):
@@ -508,3 +580,125 @@ def test_other_paths_are_not_proxied(call):
     assert call("GET", "/admin/api/state")[0] == 404
     assert call("POST", "/v1/responses", {"model": "gpt-5.5"})[0] == 404
     assert FakeUnderclass.requests == []
+
+
+def test_opencode_go_chat_keeps_its_own_fields(call):
+    messages = [
+        {"role": "system", "content": "Be terse."},
+        {"role": "user", "content": "ping"},
+    ]
+    body = {
+        "model": "opencode-go/kimi-k3",
+        "messages": messages,
+        "max_tokens": 64,
+        "reasoning_effort": "high",
+        "temperature": 0.2,
+        "tools": [
+            {
+                "type": "function",
+                "function": {"name": "get_weather", "parameters": {"type": "object"}},
+            }
+        ],
+        "chat_template_kwargs": {"enable_thinking": True},
+        "enable_thinking": True,
+    }
+    status, _, answer = call("POST", "/v1/chat/completions", body)
+    assert status == 200
+    assert json.loads(answer) == {**GO_COMPLETION, "model": "opencode-go/kimi-k3"}
+    assert FakeUnderclass.paths == ["/v1/chat/completions"]
+    # Only Mesh-LLM's template switches stay behind; the opening names the
+    # conversation for account affinity.
+    forwarded = {
+        key: value
+        for key, value in body.items()
+        if key not in {"chat_template_kwargs", "enable_thinking"}
+    }
+    assert FakeUnderclass.requests == [
+        {**forwarded, "prompt_cache_key": gateway.conversation_key(messages)}
+    ]
+
+
+def test_opencode_go_stream_is_relayed_unchanged(call):
+    status, content_type, body = chat(
+        call,
+        "opencode-go/kimi-k3",
+        stream=True,
+        stream_options={"include_usage": True},
+    )
+    assert status == 200
+    assert content_type == "text/event-stream"
+    assert body == GO_STREAM
+    [upstream] = FakeUnderclass.requests
+    assert upstream["stream"] is True
+    assert upstream["stream_options"] == {"include_usage": True}
+
+
+def chunk_payloads(raw):
+    """Split a raw chunked HTTP response into its chunk payloads."""
+    _, _, body = raw.partition(b"\r\n\r\n")
+    payloads = []
+    while body:
+        size, _, body = body.partition(b"\r\n")
+        if int(size, 16) == 0:
+            return payloads
+        payloads.append(body[: int(size, 16)])
+        body = body[int(size, 16) + 2 :]
+    msg = "the chunked body is not terminated"
+    raise AssertionError(msg)
+
+
+def test_opencode_go_stream_keeps_each_event_in_one_chunk(servers):
+    # Mesh-LLM splits the body at blank lines without decoding the chunk
+    # framing, so an event must never straddle two chunks.
+    body = json.dumps(
+        {
+            "model": "opencode-go/kimi-k3",
+            "stream": True,
+            "messages": [{"role": "user", "content": "ping"}],
+        }
+    ).encode()
+    port = servers["current"].server_address[1]
+    with socket.create_connection(("127.0.0.1", port), timeout=10) as connection:
+        connection.sendall(
+            b"POST /v1/chat/completions HTTP/1.1\r\nHost: gateway\r\n"
+            b"Content-Type: application/json\r\nContent-Length: %d\r\n\r\n%b"
+            % (len(body), body)
+        )
+        raw = b""
+        while received := connection.recv(65536):
+            raw += received
+    payloads = chunk_payloads(raw)
+    assert b"".join(payloads) == GO_STREAM
+    assert all(payload.endswith(b"\n\n") for payload in payloads)
+    assert len(payloads) == GO_STREAM.count(b"\n\n")
+
+
+def test_opencode_go_session_header_is_the_affinity_key(call):
+    body = {
+        "model": "opencode-go/kimi-k3",
+        "messages": [{"role": "user", "content": "ping"}],
+    }
+    call("POST", "/v1/chat/completions", body, headers={"session-id": "session-1"})
+    assert FakeUnderclass.sessions == ["session-1"]
+    assert "prompt_cache_key" not in FakeUnderclass.requests[0]
+
+
+def test_opencode_go_refusal_keeps_its_retry_after(servers):
+    connection = http.client.HTTPConnection(
+        "127.0.0.1", servers["current"].server_address[1], timeout=10
+    )
+    body = {
+        "model": "opencode-go/spent",
+        "messages": [{"role": "user", "content": "x"}],
+    }
+    connection.request(
+        "POST",
+        "/v1/chat/completions",
+        body=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+    )
+    response = connection.getresponse()
+    assert response.status == 429
+    assert response.getheader("Retry-After") == "120"
+    assert json.loads(response.read()) == GO_REFUSAL
+    connection.close()
