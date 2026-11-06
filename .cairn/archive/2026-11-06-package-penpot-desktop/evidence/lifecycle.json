@@ -1,0 +1,180 @@
+{
+  "gates": {
+    "proposal": {
+      "command": [
+        "nix",
+        "run",
+        "--offline",
+        "path:/home/brittonr/git/OnixResearch/cairn#cairn",
+        "--",
+        "gate",
+        "proposal",
+        "package-penpot-desktop",
+        "--root",
+        "/home/brittonr/git/onixpkgs-penpot-9xm8nycc",
+        "--policy",
+        "/home/brittonr/git/onixpkgs-penpot-9xm8nycc/cairn-policy/generated/cairn-policy.json"
+      ],
+      "exitCode": 0,
+      "valid": true,
+      "verdict": "PASS",
+      "issues": [],
+      "inputHash": "4620301b3e2540199eb77003f81a6bf66c16878c7e89f3aff2206ce92a193c67",
+      "policyHash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+      "receiptHash": "6f7f4ddc5b9a0b3df21c80934d53032540ddfcd8a403181676bedbd620150c0f",
+      "stderr": ""
+    },
+    "design": {
+      "command": [
+        "nix",
+        "run",
+        "--offline",
+        "path:/home/brittonr/git/OnixResearch/cairn#cairn",
+        "--",
+        "gate",
+        "design",
+        "package-penpot-desktop",
+        "--root",
+        "/home/brittonr/git/onixpkgs-penpot-9xm8nycc",
+        "--policy",
+        "/home/brittonr/git/onixpkgs-penpot-9xm8nycc/cairn-policy/generated/cairn-policy.json"
+      ],
+      "exitCode": 0,
+      "valid": true,
+      "verdict": "PASS",
+      "issues": [],
+      "inputHash": "34ad37c81dd3876f23dab592f673daa51ec8cee557e5c3773227fab6c45f4624",
+      "policyHash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+      "receiptHash": "421a83f0b5514f7f31a9c986247fd3954e44018837bcf6831fd81d0b55486e51",
+      "stderr": ""
+    },
+    "tasks": {
+      "command": [
+        "nix",
+        "run",
+        "--offline",
+        "path:/home/brittonr/git/OnixResearch/cairn#cairn",
+        "--",
+        "gate",
+        "tasks",
+        "package-penpot-desktop",
+        "--root",
+        "/home/brittonr/git/onixpkgs-penpot-9xm8nycc",
+        "--policy",
+        "/home/brittonr/git/onixpkgs-penpot-9xm8nycc/cairn-policy/generated/cairn-policy.json"
+      ],
+      "exitCode": 0,
+      "valid": true,
+      "verdict": "PASS",
+      "issues": [],
+      "inputHash": "be39fecc2b71b95ea8b869125b473ee431793ee557790946cfab04604e9d8ea3",
+      "policyHash": "c8276321e0e82c524e09ad9357fa48a9d38ac8590263ee6f79c51a328dc6037d",
+      "receiptHash": "d333b93e64dad972201cf966d6eb4fffbf23966201d059e9d8860b72aec5558e",
+      "stderr": ""
+    }
+  },
+  "repositoryValidation": {
+    "command": [
+      "nix",
+      "run",
+      "--offline",
+      "path:/home/brittonr/git/OnixResearch/cairn#cairn",
+      "--",
+      "validate",
+      "--root",
+      "/home/brittonr/git/onixpkgs-penpot-9xm8nycc",
+      "--policy",
+      "/home/brittonr/git/onixpkgs-penpot-9xm8nycc/cairn-policy/generated/cairn-policy.json"
+    ],
+    "exitCode": 0,
+    "valid": true,
+    "issues": []
+  },
+  "formatting": {
+    "command": [
+      "nix",
+      "build",
+      "--accept-flake-config",
+      "--no-link",
+      "--print-out-paths",
+      "-L",
+      ".#checks.x86_64-linux.formatting"
+    ],
+    "exitCode": 0,
+    "sourceJob": "bg_62",
+    "output": "/nix/store/8fkbjf37gffarz559sxvspvq5wzcqxql-treefmt-check",
+    "processedFiles": 107,
+    "changedFiles": 0
+  },
+  "staticChecks": {
+    "nixfmt": {
+      "command": [
+        "nixfmt",
+        "--check",
+        "flake.nix",
+        "overlay.nix",
+        "pkgs/penpot-desktop/default.nix"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "deadnix": {
+      "command": [
+        "deadnix",
+        "--no-lambda-pattern-names",
+        "--fail",
+        "flake.nix",
+        "overlay.nix",
+        "pkgs/penpot-desktop/default.nix"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "statix:flake.nix": {
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "statix:overlay.nix": {
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    "statix:pkgs/penpot-desktop/default.nix": {
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "exportEvaluation": {
+    "command": [
+      "nix",
+      "eval",
+      "--offline",
+      "--impure",
+      "--json",
+      "--expr",
+      "let f = builtins.getFlake \"git+file:///home/brittonr/git/onixpkgs-penpot-9xm8nycc\"; in { x86Version = f.packages.x86_64-linux.penpot-desktop.version; armVersion = f.packages.aarch64-linux.penpot-desktop.version; darwinExported = f.packages.aarch64-darwin ? penpot-desktop; }"
+    ],
+    "exitCode": 0,
+    "result": {
+      "armVersion": "1.0.1",
+      "darwinExported": false,
+      "x86Version": "1.0.1"
+    }
+  },
+  "packageIdentity": {
+    "derivation": "/nix/store/nq43b2qzmg8z8bj06fz0xhrprmyfzpwg-penpot-desktop-1.0.1.drv",
+    "output": "/nix/store/7nkn6c3zl5yk6xdl39hsxilgghmw0yxm-penpot-desktop-1.0.1",
+    "packageName": "penpot-desktop-1.0.1",
+    "platforms": ["x86_64-linux", "aarch64-linux"],
+    "version": "1.0.1"
+  },
+  "nonClaims": [
+    "Structural Cairn gates do not prove package runtime behavior",
+    "No deployment performed",
+    "No claim that aarch64 package was built"
+  ]
+}

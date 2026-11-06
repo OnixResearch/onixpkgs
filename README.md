@@ -63,6 +63,13 @@ wrappedRust = kacheLib.mkWrappedRustPackage {
   discovery, per-job errors and wrong-fork rejection.
   Consumers own immutable jobset inputs, plugins and evaluation policy; a
   package build or JSONL observation does not confer host or deployment authority.
+- `penpot-desktop` packages upstream 1.0.1 with supported Electron 45.2.1.
+  Its `nixpkgs-penpot` input scopes the build/runtime cohort to the reviewed
+  `6dadaf4375be35033e1c84395adbd53ff5fded96` revision without moving other packages'
+  shared base. Advance the application release and this Electron cohort together;
+  do not permit an end-of-life runtime to keep an old application evaluating.
+  Build with `nix build .#penpot-desktop`; the installed launcher and desktop
+  entry use the packaged ASAR/resources, icon, and license.
 
 ## Add a package
 

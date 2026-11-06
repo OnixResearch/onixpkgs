@@ -211,6 +211,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-penpot": {
+      "locked": {
+        "lastModified": 1793826729,
+        "narHash": "sha256-D5H7H+qMoTGI/jJtxKP4u7BdjkFnUyhOovTrf3pTOr0=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6dadaf4375be35033e1c84395adbd53ff5fded96",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6dadaf4375be35033e1c84395adbd53ff5fded96",
+        "type": "github"
+      }
+    },
     "nixpkgs-regression": {
       "locked": {
         "lastModified": 1643052045,
@@ -249,6 +265,7 @@
         "llm-agents": "llm-agents",
         "nix-onix": "nix-onix",
         "nixpkgs": "nixpkgs_2",
+        "nixpkgs-penpot": "nixpkgs-penpot",
         "treefmt-nix": "treefmt-nix_2",
         "wrappers": "wrappers"
       }

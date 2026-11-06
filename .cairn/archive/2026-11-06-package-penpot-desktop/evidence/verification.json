@@ -1,0 +1,84 @@
+{
+  "packageBuild": {
+    "command": [
+      "nix",
+      "build",
+      "--accept-flake-config",
+      "--no-link",
+      "--print-out-paths",
+      "-L",
+      ".#penpot-desktop"
+    ],
+    "exitCode": 0,
+    "buildLogArtifact": "artifact://495",
+    "output": "/nix/store/7nkn6c3zl5yk6xdl39hsxilgghmw0yxm-penpot-desktop-1.0.1",
+    "derivation": "/nix/store/nq43b2qzmg8z8bj06fz0xhrprmyfzpwg-penpot-desktop-1.0.1.drv"
+  },
+  "sourceHash": "sha256-8m3q2hSDwDKstTxVt9NVVB3y2O5kmac7RcY6oDswAmY=",
+  "npmDepsHash": "sha256-7u5+MILiIHybHsEgYg+GDGPujlxgaOTxaZ3MKdb3wWU=",
+  "sharedInputsRetained": {
+    "horizon": true,
+    "llm-agents": true,
+    "nix-onix": true,
+    "nixpkgs": true,
+    "treefmt-nix": true,
+    "wrappers": true
+  },
+  "consumers": {
+    "aspen3": {
+      "command": [
+        "nix",
+        "eval",
+        "--raw",
+        "--show-trace",
+        "--no-write-lock-file",
+        "--accept-flake-config",
+        "--override-input",
+        "onixpkgs",
+        "git+file:///home/brittonr/git/onixpkgs-penpot-9xm8nycc",
+        ".#nixosConfigurations.aspen3.config.system.build.toplevel.drvPath"
+      ],
+      "exitCode": 0,
+      "stdout": "/nix/store/1zn9821jpp3bd4zlai5f97bm2cwpl5ml-nixos-system-aspen3-26.11.20261104.6dadaf4.drv",
+      "stderr": "warning: not writing modified lock file of flake 'git+file:///home/brittonr/git/onix-core':\n\u2022 Updated input 'onixpkgs':\n    'git+ssh://git@github.com/OnixResearch/onixpkgs.git?ref=refs/heads/main&rev=4b7c429' (2026-10-29)\n  \u2192 'git+file:///home/brittonr/git/onixpkgs-penpot-9xm8nycc' (2026-10-29)\n\u2022 Added input 'onixpkgs/nixpkgs-penpot':\n    'github:NixOS/nixpkgs/6dadaf4?narHash=sha256-D5H7H%2BqMoTGI/jJtxKP4u7BdjkFnUyhOovTrf3pTOr0%3D' (2026-11-04)\nevaluation warning: Service instance 'cloud-hypervisor-host-tools': - default tags: no machine with tag 'cloud-hypervisor-host' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'cosmic-tools': - default tags: no machine with tag 'cosmic' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'dgx-spark-tools': - default tags: no machine with tag 'dgx-spark' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'nvidia-tools': - default tags: no machine with tag 'nvidia' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'rdma-cluster-tools': - default tags: no machine with tag 'rdma-cluster' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'iroh-ssh-dgx-spark': - peer tags: no machine with tag 'dgx-spark' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'mesh-llm-dgx-spark': - default tags: no machine with tag 'dgx-spark' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nevaluation warning: Service instance 'br-tailnet': - peer tags: no machine with tag 'dgx-spark' found.\n                    Available tags: [\"hm-server\",\"minimal-docs\",\"ssd-optimization\",\"dev\",\"all\",\"nixos\",\"kindling-spark\",\"pinenote\",\"tailnet-brittonr\",\"cloud-hypervisor-guest\",\"hm-laptop\",\"boot-partition-gc\",\"perf-tuning\",\"printing\",\"laptop\",\"laptop-input\",\"greeter\",\"audio\",\"grub-theme\",\"remote-builders\",\"xdg-portal\",\"prometheus\",\"monitoring\",\"homepage-server\",\"static-test\",\"static-demo\",\"openpgp\",\"password-manager\",\"typst\",\"llm-client\",\"qwen-code-client\",\"cross-compile\",\"creative\",\"docker\",\"taskwarrior\",\"backup\",\"syncthing\",\"omnibin\",\"desktop\",\"pro-audio\",\"tenstorrent\",\"media\",\"traefik-desktop\",\"llm\",\"udev-rules\",\"gaming\",\"initrd-ssh\",\"thunderbolt-link\",\"darwin\",\"amd-gpu\",\"gpu-unified-memory\",\"vllm-cluster-network\"]\nwaiting for another Nix process to finish fetching input 'github:brittonr/herdr-iroh/1ee15bf8506a13394de2f253ee6fd8febfca1a64?narHash=sha256-fyZCOTLTZi6sJJd/I4KP9hJvc/JBPvclJi/eO5x/eKU%3D'...\nevaluation warning: stdenv.isDarwin is deprecated, use stdenv.hostPlatform.isDarwin instead\nevaluation warning: stdenv.isLinux is deprecated, use stdenv.hostPlatform.isLinux instead\nevaluation warning: stdenv.isLinux is deprecated, use stdenv.hostPlatform.isLinux instead\nevaluation warning: stdenv.isDarwin is deprecated, use stdenv.hostPlatform.isDarwin instead\nevaluation warning: stdenv.isDarwin is deprecated, use stdenv.hostPlatform.isDarwin instead\nevaluation warning: stdenv.isLinux is deprecated, use stdenv.hostPlatform.isLinux instead\nevaluation warning: brittonr profile: The option `programs.noctalia.validateConfig' defined in `/nix/store/xvgsvq6v08k18fxiw9vkxcpa8qf56my0-source/inventory/home-profiles/brittonr/noctalia/noctalia-config.nix' has been renamed to `programs.noctalia.checkConfig'.\nevaluation warning: brittonr profile: Relying on `home.pointerCursor` to enable cursor config generation is deprecated.\n                    Please update your configuration to explicitly set:\n\n                      home.pointerCursor.enable = true;\nevaluation warning: The config.clan.core.vars.generators.radicle-seed-replica-radicle-forge-aspen3-seed.files.node-public-key is not secret:\n\n\n                    The mode is set to 0444, but should be 0400.\n\n                    This doesn't work because the file will be added to the nix store\nevaluation warning: The option `services.avahi.publish.enable` is obsolete. Use\n                    `services.avahi.settings.publish.\"disable-publishing\" = false;` instead.\nevaluation warning: The option `services.avahi.publish.userServices` is obsolete. Use\n                    `services.avahi.settings.publish.disable-user-service-publishing = false;`\n                    and `services.avahi.settings.publish.publish-addresses = true;` instead.\n"
+    },
+    "britton-desktop": {
+      "command": [
+        "nix",
+        "eval",
+        "--offline",
+        "--raw",
+        "--show-trace",
+        "--no-write-lock-file",
+        "--accept-flake-config",
+        "--override-input",
+        "onixpkgs",
+        "git+file:///home/brittonr/git/onixpkgs-penpot-9xm8nycc",
+        ".#nixosConfigurations.britton-desktop.config.system.build.toplevel.drvPath"
+      ],
+      "exitCode": 0,
+      "sourceJob": "bg_60",
+      "stdout": "/nix/store/191ww8v8vpa5v3s7rl575s4kfq64sd51-nixos-system-britton-desktop-26.11.20261104.6dadaf4.drv"
+    }
+  },
+  "applicationSmoke": {
+    "observedTitle": "Penpot Desktop",
+    "localApplicationUrl": "file:///nix/store/7nkn6c3zl5yk6xdl39hsxilgghmw0yxm-penpot-desktop-1.0.1/opt/Penpot/resources/app.asar/src/base/index.html",
+    "observedGuestTitle": "Penpot | Full-stack design",
+    "observedGuestUrl": "https://design.penpot.app/?screen=auth-login",
+    "screenshot": "penpot-startup.png",
+    "nativeCaptureBackend": "unavailable",
+    "fallback": "Real packaged Electron renderer capture through loopback CDP under isolated Xvfb/D-Bus",
+    "credentialsProvided": false,
+    "sandboxDisabled": false,
+    "loginOrConsentActionTaken": false,
+    "isolatedServiceStopped": true,
+    "isolatedProfileRemoved": true
+  },
+  "nonClaims": [
+    "No machine deployed or activated",
+    "No existing application account or profile used",
+    "No authentication or cookie-consent action",
+    "No claim that unrelated packages build"
+  ]
+}

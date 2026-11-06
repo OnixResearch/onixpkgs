@@ -4,6 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
+    # Penpot 1.0.1 requires Electron 45, absent from the shared package base.
+    nixpkgs-penpot.url = "github:NixOS/nixpkgs/6dadaf4375be35033e1c84395adbd53ff5fded96";
+
     # Upstream Herdr binary wrapped by pkgs/herdr.
     llm-agents = {
       url = "github:numtide/llm-agents.nix";

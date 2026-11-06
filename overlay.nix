@@ -23,7 +23,10 @@ let
   };
 
   # Packages built by a scoped callPackage instead of the top-level one.
-  callers.claude-md = final.python3Packages.callPackage;
+  callers = {
+    claude-md = final.python3Packages.callPackage;
+    penpot-desktop = inputs.nixpkgs-penpot.legacyPackages.${system}.callPackage;
+  };
 
   callPackageDirectory =
     name: _type: (callers.${name} or final.callPackage) (./pkgs + "/${name}") (callArgs.${name} or { });

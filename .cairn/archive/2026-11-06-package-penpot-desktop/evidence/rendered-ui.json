@@ -1,0 +1,11 @@
+{
+  "surface": {
+    "title": "Penpot Desktop",
+    "url": "file:///nix/store/7nkn6c3zl5yk6xdl39hsxilgghmw0yxm-penpot-desktop-1.0.1/opt/Penpot/resources/app.asar/src/base/index.html",
+    "readyState": "complete",
+    "text": "",
+    "buttons": [],
+    "webviews": []
+  },
+  "runtimeExceptions": []
+}

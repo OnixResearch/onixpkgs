@@ -1,0 +1,29 @@
+{
+  "package": "/nix/store/7nkn6c3zl5yk6xdl39hsxilgghmw0yxm-penpot-desktop-1.0.1",
+  "sourceRelease": "https://github.com/author-more/penpot-desktop/releases/tag/v1.0.1",
+  "sourceHash": "sha256-8m3q2hSDwDKstTxVt9NVVB3y2O5kmac7RcY6oDswAmY=",
+  "npmDepsHash": "sha256-7u5+MILiIHybHsEgYg+GDGPujlxgaOTxaZ3MKdb3wWU=",
+  "electron": "45.2.1",
+  "nixpkgsCohort": "6dadaf4375be35033e1c84395adbd53ff5fded96",
+  "computerBackend": "unavailable",
+  "computerDisplayCount": 0,
+  "verificationSurface": "Real packaged Electron process under isolated Xvfb and D-Bus session; CDP screenshot fallback because native computer capture is unavailable",
+  "debugAddress": "127.0.0.1",
+  "debugPort": 35121,
+  "service": "penpot-dependency-smoke",
+  "pid": 3754077,
+  "isolatedProfileRoot": "/tmp/onix-penpot-ui-smoke-hnsygrh9",
+  "existingUserProfileUsed": false,
+  "credentialsProvided": false,
+  "sandboxDisabled": false,
+  "deploymentPerformed": false,
+  "publicationDuringBuild": false,
+  "sharedPackageInputsRetained": {
+    "horizon": true,
+    "llm-agents": true,
+    "nix-onix": true,
+    "nixpkgs": true,
+    "treefmt-nix": true,
+    "wrappers": true
+  }
+}
