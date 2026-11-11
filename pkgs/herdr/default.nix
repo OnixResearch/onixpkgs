@@ -183,6 +183,11 @@ let
   # Its actions call the managed scripts/collie-ctl.sh entry point.
   # The restricted manifest has no mutable build step.
   colliePlugin = collie;
+  # Collie supervises a systemd user unit and its controller shells out to
+  # systemctl, so the package builds only on Linux. Herdr itself supports
+  # Darwin; omit the phone bridge there instead of making the wrapper's
+  # plugin bundle depend on a Linux-only package.
+  includeCollie = pkgs.stdenv.hostPlatform.isLinux;
 
   # r[impl onix.britton-desktop.herdr.wrapper.registry]
   patchedHerdr = herdr.overrideAttrs (old: {
@@ -204,8 +209,8 @@ let
     mirrorPlugin
     jjWorkspacePlugin
     pueuePlugin
-    colliePlugin
-  ];
+  ]
+  ++ lib.optional includeCollie colliePlugin;
   pluginSources = [
     {
       source = "smarzban/herdr-file-viewer";
@@ -235,11 +240,11 @@ let
       source = "../herdr-plugin-pueue";
       revision = "29b2ba060297ec15909e06ef1311200c17965cbe";
     }
-    {
-      source = "umakers/collie-herdr";
-      revision = "b2d2803b3f691e9abca74f3f15bbc37307a2026e";
-    }
-  ];
+  ]
+  ++ lib.optional includeCollie {
+    source = "umakers/collie-herdr";
+    revision = "b2d2803b3f691e9abca74f3f15bbc37307a2026e";
+  };
   expectedPluginIds = [
     "herdr-file-viewer"
     "persiyanov.reviewr"
@@ -248,8 +253,8 @@ let
     "mirror"
     "nathanflurry.jj-workspace"
     "dev.herdr.pueue"
-    "herdr.collie"
-  ];
+  ]
+  ++ lib.optional includeCollie "herdr.collie";
   requiredPluginArtifacts = [
     "${fileViewerPlugin}/target/release/herdr-file-viewer"
     "${reviewrPlugin}/bin/herdr-reviewr"
@@ -258,6 +263,8 @@ let
     "${mirrorPlugin}/target/release/herdr-mirror"
     "${jjWorkspacePlugin}/target/release/jj-workspace"
     "${pueuePlugin}/target/release/herdr-plugin-pueue"
+  ]
+  ++ lib.optionals includeCollie [
     "${colliePlugin}/web/dist/index.html"
     "${colliePlugin}/scripts/collie-ctl.sh"
   ];
