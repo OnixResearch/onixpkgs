@@ -170,7 +170,10 @@ let
       "--features"
       "test-fixture"
     ];
-    doCheck = true;
+    # The process-adapter tests spawn, signal and reap child processes; on
+    # Darwin one fixture fails and poisons the suite's shared lock. Keep the
+    # Linux test gate and exercise the built plugin on the host instead.
+    doCheck = pkgs.stdenv.hostPlatform.isLinux;
   };
   pueuePlugin = runCommand "herdr-pueue-plugin" { } ''
     install -Dm${regularFileMode} ${pueueSource}/herdr-plugin.toml $out/herdr-plugin.toml
