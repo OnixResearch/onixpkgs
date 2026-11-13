@@ -71,6 +71,113 @@ wrappedRust = kacheLib.mkWrappedRustPackage {
   Build with `nix build .#penpot-desktop`; the installed launcher and desktop
   entry use the packaged ASAR/resources, icon, and license.
 
+## AMD XDNA NPU runtime
+
+`pkgs.amd-xdna-runtime` builds the official XRT **NPU** base, PCIe runtime,
+`xrt-smi`, `xrt-runner`, and XDNA plugin together on x86_64-linux. The stable
+xdna-driver tag `2.21.75` (`beb9e450fe123ecdf395453971576179cedcf1dd`)
+pins XRT `4eb1f4392a012b4e6eca759762389c612537f7c7`; update the pair,
+including recursive XRT submodules, together. The default contains open-source
+userspace with dependency notices, not firmware, a kernel module, DKMS,
+compiled workloads, a service, or global environment changes.
+
+Install the package and retain a compatible `amdxdna` driver and firmware.
+Grant the intended user access to `/dev/accel/accel*`, normally through `render`.
+Do not source a distro `setup.sh` or mix libraries from another XRT release.
+The ELF tools use Nix RPATHs; the core finds its XDNA plugin beside
+`libxrt_core.so.2` and modules below `lib/xrt/module`.
+`share/amd-xdna-runtime.json` records component provenance.
+
+The matched KMQ/Strix shim maps a **64 MiB locked device heap even for queries**.
+An insufficient `RLIMIT_MEMLOCK` can fail that mapping with `EAGAIN` and flags
+`0x2011`. Check the invoking process's actual soft/hard limits. Command,
+control-packet and other workload buffers need additional budget: 64 MiB is
+a query floor, not a workload maximum. A consumer can explicitly approve a
+bounded 256 MiB allowance (268,435,456 bytes; 262,144 KiB for PAM), but must
+verify its workload. Resource policy belongs to the consumer; this package
+does not raise limits, grant capabilities, disable locking, or shrink heaps.
+
+Read-only initialization is `xrt-smi examine`, followed by
+`xrt-smi examine --device <BDF> --report platform`. Enumeration and CLI smoke
+tests are not compute proof. Hardware-specific validation help is
+`xrt-smi validate --device <BDF> --help`.
+
+### Optional workload data and driver feature boundary
+
+After license review and explicit authorization,
+`pkgs.amd-xdna-runtime.override { withValidationData = true; }` adds the
+unmodified official Strix archive selected by xdna-driver's `tools/info.json`
+from [VTD commit c79b5d2](https://github.com/Xilinx/VTD/tree/c79b5d21568a4ffa5b0612a8279b352fc4e1109a).
+Its [LICENSE.vtd](https://github.com/Xilinx/VTD/blob/c79b5d21568a4ffa5b0612a8279b352fc4e1109a/LICENSE.vtd)
+allows unmodified binary redistribution with notices, prohibits reverse
+engineering except where law permits, and is not open source. The variant is
+marked `unfreeRedistributable` and installs its license. The free default does
+not fetch or close over VTD. The archive belongs at
+`share/xrt/amdxdna/bins/xrt_smi_strx.a`: XRT searches `share/xrt` for a Nix
+prefix, not the distro-style `share/amdxdna` location.
+
+**The `xrt-smi validate --run gemm` benchmark requires firmware-debug-buffer support;
+ordinary GEMM dispatch does not.** The benchmark's result buffer requires
+`DRM_AMDXDNA_HWCTX_ASSIGN_DBG_BUF` and debug-buffer synchronization.
+[Linux 6.18.60](https://github.com/gregkh/linux/blob/v6.18.60/drivers/accel/amdxdna/aie2_ctx.c#L786-L800)
+returns `EOPNOTSUPP` for debug-buffer attachment/removal while implementing CU
+configuration separately. [Upstream commit 7ea0468](https://github.com/torvalds/linux/commit/7ea0468380216c10b73633b976d33efa8c12d375)
+adds that support, present in 6.19. This is a feature boundary, not a
+recommendation to install an obsolete kernel or a complete compatibility
+guarantee. Root, more memlock, ignoring the error, or stripping required
+resources cannot make that benchmark valid on an unsupported driver.
+
+`xrt-smi validate --device <BDF> --run gemm` also requests performance mode.
+Capture the prior `power_mode` with a platform JSON report and re-query it
+afterwards; interrupted validation may bypass restoration. If necessary,
+`xrt-smi configure --device <BDF> --pmode <saved-mode>` restores it. Never
+assume a killed process restored the mode. The benchmark checks completion
+and cycle counts, not a golden matrix result.
+
+### Ordinary arithmetic verification without debug buffers
+
+The distinct official `recipe_temporal_sharing_ovd.json` runs the same real
+`gemm.xclbin`/`gemm.elf` kernel with no debug buffer. Its unmodified profile is
+finite: 100 iterations at depth 15, or 1,500 invocations in one context.
+The standalone runner uses device index **0**, with no BDF selector in this
+version: confirm that index is the intended NPU. It does not itself request
+a power-mode change. This is not `xrt-smi`'s temporal-sharing benchmark,
+which adds multiple contexts and preemption telemetry.
+
+Run only after the consumer authorizes real device work, reviews the VTD
+license, and configures sufficient per-process resources. From this checkout,
+the following builds the authorized variant and extracts original members
+without modifying the archive or their bytes. GNU `ar` and `timeout` are needed.
+
+```sh
+set -eu
+runtime=$(NIXPKGS_ALLOW_UNFREE=1 nix build --impure --no-link --print-out-paths --expr '
+  let f = builtins.getFlake (toString ./.);
+  in f.packages.${builtins.currentSystem}.amd-xdna-runtime.override {
+    withValidationData = true;
+  }
+')
+archive="$runtime/share/xrt/amdxdna/bins/xrt_smi_strx.a"
+work=$(mktemp -d)
+trap 'rm -rf -- "$work"' EXIT
+(cd "$work" && ar x "$archive" \
+  recipe_temporal_sharing_ovd.json profile_temporal_sharing_ovd.json \
+  gemm.xclbin gemm.elf)
+timeout --kill-after=5s 180s "$runtime/bin/xrt-runner" \
+  --recipe "$work/recipe_temporal_sharing_ovd.json" \
+  --profile "$work/profile_temporal_sharing_ovd.json" \
+  --dir "$work" --report "$work/report.json"
+cat "$work/report.json"
+```
+
+Require exit zero and a throughput report with iterations 100 and depth 15;
+the runner waits for command completion and propagates failures. This recipe
+exposes **no numerical result or golden comparison**: success proves real
+arithmetic-workload completion, not arithmetic correctness or model inference.
+The source-matched KMQ golden-output tests need separate
+`NPU5_1x4_TESTCASES` assets absent from this archive. Package checks do not
+submit target work; hardware verification and its limits belong to consumers.
+
 ## Add a package
 
 1. Create `pkgs/<name>/default.nix`. The directory name is the attribute name.

@@ -1,0 +1,35 @@
+--- a/src/CMake/nativeLnx.cmake
++++ b/src/CMake/nativeLnx.cmake
+@@ -34,6 +34,9 @@ endif (OPENCL_FOUND)
+ # --- LSB Release ---
+ find_program(UNAME uname)
+ 
++# Onix: allow the package's explicit target distro in a sandbox without
++# /etc/os-release. This is build configuration, not runtime detection.
++if (NOT DEFINED LINUX_FLAVOR)
+ execute_process(
+   COMMAND awk -F= "$1==\"ID\" {print $2}" /etc/os-release
+   COMMAND tr -d "\""
+@@ -57,6 +60,7 @@ else()
+     OUTPUT_STRIP_TRAILING_WHITESPACE
+ )
+ endif()
++endif()
+ 
+ execute_process(COMMAND ${UNAME} -r
+   OUTPUT_VARIABLE LINUX_KERNEL_VERSION
+@@ -165,10 +169,11 @@ else()
+   message("-- Skipping bundling of XRT Alveo drivers with XRT package")
+ endif()
+ 
+-# ICD loader if for installed with base component
+-if (XRT_BASE)
++# Onix: do not register an OpenCL vendor globally from this NPU package.
++# Consumers retain their own OpenCL platform registration policy.
++if (XRT_BASE AND NOT XRT_NPU)
+   include (CMake/icd.cmake)
+-endif (XRT_BASE)
++endif ()
+ 
+ # --- Change Log ---
+ include (CMake/changelog.cmake)

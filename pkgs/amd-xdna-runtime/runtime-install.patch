@@ -1,0 +1,11 @@
+--- a/src/shim/CMakeLists.txt
++++ b/src/shim/CMakeLists.txt
+@@ -68,7 +68,4 @@ install(TARGETS ${XDNA_TARGET}
+   COMPONENT ${XDNA_COMPONENT}
+   )
+ 
+-# install components for testing
+-install(TARGETS ${XRT_CORE_TARGET} DESTINATION ${XDNA_BIN_DIR}/${XDNA_PKG_LIB_DIR})
+-install(TARGETS ${XRT_COREUTIL_TARGET} DESTINATION ${XDNA_BIN_DIR}/${XDNA_PKG_LIB_DIR})
+-install(TARGETS ${XDNA_TARGET} DESTINATION ${XDNA_BIN_DIR}/${XDNA_PKG_LIB_DIR})
++# Onix: runtime prefix already contains all three targets; no /bins test tree.
